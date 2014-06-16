@@ -3,6 +3,7 @@ unless File.exist?('Gemfile')
     source 'https://rubygems.org'
     gem 'rails', github: 'rails/rails'
     gem 'arel', github: 'rails/arel'
+    gem 'pg'
     gem 'sqlite3'
   GEMFILE
 
@@ -19,7 +20,7 @@ require 'minitest/autorun'
 Minitest::Test = MiniTest::Unit::TestCase unless defined?(Minitest::Test)
 
 # This connection will do for database-independent bug reports.
-ActiveRecord::Base.establish_connection(adapter: 'sqlite3', database: ':memory:')
+ActiveRecord::Base.establish_connection(adapter: 'postgresql', database: 'rails_test', host: "localhost")
 ActiveRecord::Base.logger = Logger.new(STDOUT)
 
 ActiveRecord::Schema.define do
@@ -54,9 +55,10 @@ class TestSubquery < Minitest::Test
   def test_subquery
     user = User.create!
     question = user.questions.create!
-    memo_card = user.memo_cards.create(question: question)
+    user.memo_cards.create!(question: question)
 
-    relation = user.questions.where.not(id: user.memo_cards.select(:question_id))
+    question_id = user.memo_cards.select(:question_id).first.question_id
+    relation = user.questions.where.not(id: question_id)
 
     assert_equal 0, relation.count
   end
